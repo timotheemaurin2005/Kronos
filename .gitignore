@@ -48,6 +48,8 @@ Desktop.ini
 *.parquet
 *.h5
 *.hdf5
+*.csv
+*.png
 
 # Model files (large files)
 *.pth
@@ -58,6 +60,7 @@ Desktop.ini
 # Logs
 *.log
 logs/
+output*.txt
 
 # Environment
 .env
