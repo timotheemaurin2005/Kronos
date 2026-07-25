@@ -491,7 +491,6 @@ class KronosPredictor:
         self.amt_vol = 'amount'
         self.time_cols = ['minute', 'hour', 'weekday', 'day', 'month']
         
-        # Auto-detect device if not specified
         if device is None:
             if torch.cuda.is_available():
                 device = "cuda:0"
@@ -504,6 +503,7 @@ class KronosPredictor:
 
         self.tokenizer = self.tokenizer.to(self.device)
         self.model = self.model.to(self.device)
+        self.model.eval()
 
     def generate(self, x, x_stamp, y_stamp, pred_len, T, top_k, top_p, sample_count, verbose):
 

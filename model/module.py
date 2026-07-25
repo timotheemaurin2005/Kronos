@@ -345,7 +345,7 @@ class MultiHeadAttentionWithRoPE(nn.Module):
         attn_output = F.scaled_dot_product_attention(
             q, k, v,
             attn_mask=attn_mask,
-            dropout_p=self.attn_dropout_p if self.training else 0.0,
+            dropout_p=(self.attn_dropout_p if (self.training and q.device.type != 'mps') else 0.0),
             is_causal=True
         )
 
@@ -389,7 +389,7 @@ class MultiHeadCrossAttentionWithRoPE(nn.Module):
         attn_output = F.scaled_dot_product_attention(
             q, k, v,
             attn_mask=attn_mask,
-            dropout_p=self.attn_dropout_p if self.training else 0.0,
+            dropout_p=(self.attn_dropout_p if (self.training and q.device.type != 'mps') else 0.0),
             is_causal=is_causal_flag
         )
 
