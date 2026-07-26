@@ -62,7 +62,7 @@ def run_backtest(ticker, num_samples, lookback, pred_len):
     timeouts = 0
     total_pnl = 0.0
     
-    portfolio_size = 1000.0 # GBP
+    portfolio_size = 10000.0 # USD ($10k per trade)
     
     for count, idx in enumerate(test_indices, 1):
         print(f"\n--- Trade {count}/{num_samples} ---")
@@ -235,7 +235,7 @@ def run_backtest(ticker, num_samples, lookback, pred_len):
             timeouts += 1 # Timeout at 0 pnl
             
         total_pnl += pnl
-        print(f"Result: {outcome} | P&L: £{pnl:.2f}")
+        print(f"Result: {outcome} | P&L: ${pnl:.2f}")
         print("-" * 40)
         
     print("\n" + "="*40)
@@ -247,8 +247,8 @@ def run_backtest(ticker, num_samples, lookback, pred_len):
         print(f"Losses: {losses}")
         print(f"Timeouts (Break Even): {timeouts}")
         print(f"Win Rate (including profitable timeouts): {(wins/total_trades)*100:.1f}%")
-        print(f"Total P&L: £{total_pnl:.2f}")
-        print(f"Average P&L per Trade: £{(total_pnl/total_trades):.2f}")
+        print(f"Total P&L: ${total_pnl:.2f}")
+        print(f"Average P&L per Trade: ${(total_pnl/total_trades):.2f}")
     print("="*40)
     
     return {
