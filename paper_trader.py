@@ -77,7 +77,7 @@ def analyze_macro_and_news(ticker, yf_ticker, is_crypto=False):
         if r.status_code == 200:
             events = r.json()
             for e in events:
-                if e.get('impact') == 'High' and any(kw in e.get('title', '').lower() for kw in ['cpi', 'fed', 'rate', 'gdp', 'payroll', 'inflation']):
+                if e.get('impact') == 'High' and any(kw in e.get('title', '').lower() for kw in ['cpi', 'fed', 'fomc', 'rate', 'gdp', 'payroll', 'inflation', 'treasury', 'yield', 'gold', 'silver', 'bullion']):
                     title = f"Macro Event [{e.get('country')}]: {e.get('title')}"
                     if len(headlines) < 6:
                         headlines.append(title)
@@ -421,9 +421,9 @@ def evaluate_and_trade(client, predictor, watchlist, trade_amount_usd=1000, stop
         for idx_r, c in enumerate(candidate_signals, 1):
             print(f"   #{idx_r} {c['ticker']} | Conviction Score: {c['conviction_score']} | Target Upside: +{c['gain_pct']:.2f}% | Macro: {c['macro']['verdict']}")
             
-        max_trades_per_cycle = 2  # Concentrate capital ONLY into the #1 and #2 most confident alpha setups
-        selected = candidate_signals[:max_trades_per_cycle]
-        print(f"   🎯 Selecting Top-{len(selected)} highest conviction trade(s) for immediate deployment...")
+        min_conviction_threshold = 2.0  # Fund ANY setup that demonstrates sufficient quant + macro conviction
+        selected = [c for c in candidate_signals if c["conviction_score"] >= min_conviction_threshold]
+        print(f"   🎯 Conviction Cut-off (Score >= {min_conviction_threshold}): Deploying capital into {len(selected)} of {len(candidate_signals)} approved setup(s)!")
         
         for trade in selected:
             t_ticker = trade["ticker"]
@@ -476,7 +476,7 @@ def evaluate_and_trade(client, predictor, watchlist, trade_amount_usd=1000, stop
 
 def main():
     parser = argparse.ArgumentParser(description="Kronos Autonomous Paper Trading Engine")
-    parser.add_argument("--watchlist", nargs="+", default=["NVDA", "TSLA", "NOW", "PLTR", "AAPL", "MSFT", "META", "AMZN", "AMD", "AVGO"], help="List of ticker symbols to evaluate")
+    parser.add_argument("--watchlist", nargs="+", default=["NVDA", "TSLA", "NOW", "PLTR", "AAPL", "MSFT", "META", "AMZN", "AMD", "AVGO", "GLD", "SLV"], help="List of ticker symbols to evaluate")
     parser.add_argument("--crypto", action="store_true", help="Use default 24/7 weekend cryptocurrency watchlist (BTC, ETH, SOL, DOGE)")
     parser.add_argument("--amount", type=float, default=10000.0, help="Target dollar amount per position (default $10,000 for $100k equity)")
     parser.add_argument("--interval", type=int, default=5, help="Minutes to wait between evaluation sweeps")
@@ -486,7 +486,7 @@ def main():
     args = parser.parse_args()
 
     watchlist = args.watchlist
-    if args.crypto and watchlist == ["NVDA", "TSLA", "NOW", "PLTR", "AAPL", "MSFT", "META", "AMZN", "AMD", "AVGO"]:
+    if args.crypto and watchlist == ["NVDA", "TSLA", "NOW", "PLTR", "AAPL", "MSFT", "META", "AMZN", "AMD", "AVGO", "GLD", "SLV"]:
         watchlist = ["BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD"]
 
     print("======================================================================")
