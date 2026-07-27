@@ -41,7 +41,7 @@ function App() {
 
   // Open interactive summary modal
   const openTickerModal = (sym) => {
-    const cleanSym = sym.replace("USD", "-USD") if "USD" in sym and not "-" in sym else sym
+    const cleanSym = (sym.includes("USD") && !sym.includes("-") && sym !== "USD") ? sym.replace("USD", "-USD") : sym
     setSelectedModalTicker(cleanSym)
     setLoadingModal(true)
     fetch(`${API_BASE}/earnings/${cleanSym}`)
