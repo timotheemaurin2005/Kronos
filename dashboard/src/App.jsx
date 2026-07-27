@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createChart } from 'lightweight-charts'
-import { Terminal, Activity, TrendingUp, AlertTriangle, Cpu, Briefcase, Newspaper, ShieldCheck, DollarSign, Globe, Layers, BarChart3, Search, FileText, CheckCircle2, XCircle } from 'lucide-react'
+import { Terminal, Activity, TrendingUp, AlertTriangle, Cpu, Briefcase, Newspaper, ShieldCheck, DollarSign, Globe, Layers, BarChart3, Search, FileText, CheckCircle2, XCircle, Info, X, ExternalLink } from 'lucide-react'
 import './index.css'
 
 const API_BASE = 'http://localhost:8000/api'
@@ -31,8 +31,30 @@ function App() {
   const [tickerEarningsData, setTickerEarningsData] = useState(null)
   const [loadingTickerEarnings, setLoadingTickerEarnings] = useState(false)
 
+  // Interactive Stock Summary Modal State
+  const [selectedModalTicker, setSelectedModalTicker] = useState(null)
+  const [modalData, setModalData] = useState(null)
+  const [loadingModal, setLoadingModal] = useState(false)
+
   const chartContainerRef = useRef(null)
   const chartRef = useRef(null)
+
+  // Open interactive summary modal
+  const openTickerModal = (sym) => {
+    const cleanSym = sym.replace("USD", "-USD") if "USD" in sym and not "-" in sym else sym
+    setSelectedModalTicker(cleanSym)
+    setLoadingModal(true)
+    fetch(`${API_BASE}/earnings/${cleanSym}`)
+      .then(res => res.json())
+      .then(data => setModalData(data))
+      .catch(err => console.error("Error fetching modal summary", err))
+      .finally(() => setLoadingModal(false))
+  }
+
+  const closeTickerModal = () => {
+    setSelectedModalTicker(null)
+    setModalData(null)
+  }
 
   // Fetch Market Data & Orchestrator Intelligence for Forecast Tab
   useEffect(() => {
@@ -139,12 +161,62 @@ function App() {
       .finally(() => setLoadingTickerEarnings(false))
   }
 
-  const formatTime = (unixTime) => {
-    return new Date(unixTime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  }
-
   return (
     <>
+      {/* INTERACTIVE INSTITUTIONAL BUSINESS & EXPANSION MODAL */}
+      {selectedModalTicker && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(5, 6, 8, 0.85)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }} onClick={closeTickerModal}>
+          <div style={{ background: '#101319', border: '1px solid #2e3543', borderRadius: '6px', width: '100%', maxWidth: '820px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }} onClick={e => e.stopPropagation()}>
+            <button onClick={closeTickerModal} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: '#8b95a5', cursor: 'pointer' }}><X size={22} /></button>
+            
+            {loadingModal || !modalData ? (
+              <div className="loader-container" style={{ minHeight: '300px' }}><div className="spinner" /> Accessing SEC & Aladdin Financial Archives for {selectedModalTicker}...</div>
+            ) : (
+              <div>
+                <div style={{ borderBottom: '2px solid #d97706', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: '800', color: '#fff', fontFamily: 'JetBrains Mono, monospace', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      {modalData.name} ({modalData.symbol})
+                      <span className="badge badge-purple" style={{ fontSize: '0.75rem' }}>{modalData.sector}</span>
+                    </h2>
+                    <div style={{ fontSize: '0.85rem', color: '#8b95a5', marginTop: '0.2rem' }}>Industry Classification: {modalData.industry}</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                  <div style={{ background: '#090b0e', border: '1px solid #1f2532', padding: '1.25rem', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.65rem' }}>🏢 Core Business & Monetized Revenue Products</div>
+                    <p style={{ fontSize: '0.88rem', color: '#e2e8f0', lineHeight: '1.6', margin: 0 }}>{modalData.core_business_products}</p>
+                  </div>
+                  <div style={{ background: '#090b0e', border: '1px solid #1f2532', padding: '1.25rem', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.65rem' }}>🚀 Capital Expenditures, R&D & Strategic Expansion</div>
+                    <p style={{ fontSize: '0.88rem', color: '#e2e8f0', lineHeight: '1.6', margin: 0 }}>{modalData.expansion_spending}</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.85rem', marginBottom: '1.5rem' }}>
+                  <div className="stat-card"><div className="stat-label">Trailing P/E</div><div className="stat-value" style={{ fontSize: '1.1rem' }}>{modalData.pe_ratio_trailing !== "N/A" ? `${modalData.pe_ratio_trailing}x` : "N/A"}</div></div>
+                  <div className="stat-card"><div className="stat-label">Forward P/E</div><div className="stat-value" style={{ fontSize: '1.1rem', color: '#60a5fa' }}>{modalData.pe_ratio_forward !== "N/A" ? `${modalData.pe_ratio_forward}x` : "N/A"}</div></div>
+                  <div className="stat-card"><div className="stat-label">Revenue Growth YoY</div><div className="stat-value" style={{ fontSize: '1.1rem', color: '#10b981' }}>{modalData.revenue_growth_yoy}</div></div>
+                  <div className="stat-card"><div className="stat-label">Free Cash Flow</div><div className="stat-value" style={{ fontSize: '1.1rem', color: '#34d399' }}>{modalData.free_cash_flow}</div></div>
+                </div>
+
+                <div style={{ background: '#0e1117', borderLeft: '4px solid #2563eb', padding: '1.25rem', borderRadius: '3px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase', marginBottom: '0.5rem' }}>📑 Executive Institutional Profile & SEC Summary</div>
+                  <p style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: '1.7', margin: 0, maxHeight: '200px', overflowY: 'auto' }}>
+                    {modalData.business_summary}
+                  </p>
+                </div>
+
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={closeTickerModal} className="ticker-btn active" style={{ padding: '0.6rem 1.5rem' }}>Close Intelligence Desk</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <header className="dashboard-header">
         <div className="brand">
           <Terminal className="brand-icon" />
@@ -170,9 +242,17 @@ function App() {
         {activeTab === 'forecast' && (
           <div className="ticker-selector">
             {['PLTR', 'NVDA', 'TSLA', 'GLD', 'SLV', 'SOL-USD'].map(sym => (
-              <button key={sym} className={`ticker-btn ${ticker === sym ? 'active' : ''}`} onClick={() => setTicker(sym)}>
-                {sym}
-              </button>
+              <div key={sym} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                <button className={`ticker-btn ${ticker === sym ? 'active' : ''}`} onClick={() => setTicker(sym)}>
+                  {sym}
+                </button>
+                <button 
+                  title="Click to view core business, revenues & CapEx expansion"
+                  onClick={() => openTickerModal(sym)} 
+                  style={{ background: '#181b22', border: '1px solid #2a313d', borderRadius: '3px', padding: '0.35rem 0.5rem', color: '#fbbf24', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                  <Info size={13} />
+                </button>
+              </div>
             ))}
             <form onSubmit={(e) => { e.preventDefault(); if (searchInput) setTicker(searchInput.toUpperCase()); }}>
               <input type="text" className="search-input" placeholder="Search Symbol..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
@@ -186,7 +266,12 @@ function App() {
         <main className="dashboard-grid">
           <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', overflowY: 'auto', maxHeight: 'calc(100vh - 90px)' }}>
             <div className="panel">
-              <h2 className="panel-title" style={{ color: '#fbbf24' }}><Cpu size={15} /> Aladdin Quant Orchestrator</h2>
+              <h2 className="panel-title" style={{ color: '#fbbf24', display: 'flex', justifyContent: 'space-between' }}>
+                <span><Cpu size={15} /> Aladdin Quant Orchestrator</span>
+                <span onClick={() => openTickerModal(ticker)} style={{ cursor: 'pointer', color: '#60a5fa', textTransform: 'none', fontSize: '0.75rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  View Business & CapEx <ExternalLink size={12} />
+                </span>
+              </h2>
               {orchestratorData ? (
                 <>
                   <div className="agent-text">"{orchestratorData.agent_analysis}"</div>
@@ -211,8 +296,11 @@ function App() {
                     </ul>
                   </div>
 
-                  <div style={{ background: '#0a0c0f', padding: '0.75rem', border: '1px solid #22262e', borderRadius: '4px', fontSize: '0.78rem', color: '#94a3b8' }}>
-                    <strong style={{ color: '#fbbf24', display: 'block', marginBottom: '0.25rem', textTransform: 'uppercase' }}>🏢 Earnings & Corporate Guidance</strong>
+                  <div style={{ background: '#0a0c0f', padding: '0.75rem', border: '1px solid #22262e', borderRadius: '4px', fontSize: '0.78rem', color: '#94a3b8', cursor: 'pointer' }} onClick={() => openTickerModal(ticker)}>
+                    <strong style={{ color: '#fbbf24', display: 'block', marginBottom: '0.25rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>🏢 Earnings & Corporate Guidance</span>
+                      <span style={{ fontSize: '0.65rem', color: '#60a5fa' }}>[Click for Revenues & CapEx Details]</span>
+                    </strong>
                     {orchestratorData.earnings_summary}
                   </div>
                 </>
@@ -330,7 +418,7 @@ function App() {
               </div>
 
               <h2 className="panel-title" style={{ marginTop: '0.5rem' }}>
-                <Layers size={16} style={{ display: 'inline' }} /> Active Holdings & Algorithmic Rationale
+                <Layers size={16} style={{ display: 'inline' }} /> Active Holdings & Algorithmic Rationale (Click Symbol for Business & Revenue Desk)
               </h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -343,7 +431,10 @@ function App() {
                     <div key={idx} className={`trade-card ${pos.pnl_usd >= 0 ? 'win' : 'loss'}`}>
                       <div className="trade-header">
                         <div className="trade-title">
-                          {pos.symbol} <span className="badge badge-blue">{pos.asset_class}</span>
+                          <span onClick={() => openTickerModal(pos.symbol)} style={{ cursor: 'pointer', textDecoration: 'underline', color: '#fbbf24' }} title="Click for Business & CapEx Report">
+                            {pos.symbol}
+                          </span>
+                          <span className="badge badge-blue">{pos.asset_class}</span>
                           <span className="badge badge-purple">{pos.status_badge}</span>
                         </div>
                         <div style={{ fontWeight: '700', fontSize: '1.15rem', color: pos.pnl_usd >= 0 ? '#10b981' : '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>
@@ -388,6 +479,11 @@ function App() {
                 onChange={(e) => setEarningsSearchTicker(e.target.value)} 
               />
               <button type="submit" className="ticker-btn active" style={{ padding: '0.6rem 1.5rem', fontSize: '0.9rem' }}>Query Aladdin Engine</button>
+              {tickerEarningsData && (
+                <button type="button" onClick={() => openTickerModal(earningsSearchTicker)} className="ticker-btn" style={{ padding: '0.6rem 1.2rem', borderColor: '#fbbf24', color: '#fbbf24' }}>
+                  📑 Open Full Business & Expansion Modal
+                </button>
+              )}
             </form>
 
             {loadingTickerEarnings || !tickerEarningsData ? (
@@ -396,7 +492,9 @@ function App() {
               <div style={{ background: '#0d0f13', padding: '1.5rem', border: '1px solid #22262e', borderRadius: '4px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #22262e', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
                   <div>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff' }}>{tickerEarningsData.name} ({tickerEarningsData.symbol})</h3>
+                    <h3 onClick={() => openTickerModal(tickerEarningsData.symbol)} style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', cursor: 'pointer', textDecoration: 'underline' }} title="Click to launch Business & CapEx desk">
+                      {tickerEarningsData.name} ({tickerEarningsData.symbol}) <ExternalLink size={15} style={{ display: 'inline', color: '#fbbf24' }} />
+                    </h3>
                     <div style={{ fontSize: '0.8rem', color: '#fbbf24', fontWeight: '600', marginTop: '0.2rem' }}>{tickerEarningsData.sector} | {tickerEarningsData.industry}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -426,7 +524,7 @@ function App() {
 
           {/* Active Portfolio Holdings Earnings & Guidance Section */}
           <div className="panel" style={{ borderTop: '3px solid #059669' }}>
-            <h2 className="panel-title" style={{ color: '#34d399' }}><FileText size={16} /> My Active Portfolio Holdings: Earnings Reports & Financial Intelligence</h2>
+            <h2 className="panel-title" style={{ color: '#34d399' }}><FileText size={16} /> My Active Portfolio Holdings: Earnings Reports & Financial Intelligence (Click Symbol for Business & Revenue Desk)</h2>
             
             {loadingPortEarnings || !portfolioEarnings ? (
               <div className="loader-container" style={{ minHeight: '200px' }}><div className="spinner" /> Pulling Live Alpaca Book Earnings Profiles...</div>
@@ -439,7 +537,9 @@ function App() {
                 {portfolioEarnings.holdings.map((h, idx) => (
                   <div key={idx} className="trade-card" style={{ borderLeftColor: '#059669', background: '#0e1015' }}>
                     <div className="trade-header">
-                      <div style={{ fontWeight: '800', fontSize: '1.15rem', color: '#fff', fontFamily: 'JetBrains Mono, monospace' }}>{h.symbol} <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '600' }}>({h.name})</span></div>
+                      <div onClick={() => openTickerModal(h.symbol)} style={{ fontWeight: '800', fontSize: '1.15rem', color: '#fbbf24', fontFamily: 'JetBrains Mono, monospace', cursor: 'pointer', textDecoration: 'underline' }} title="Click for Business & CapEx Report">
+                        {h.symbol} <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '600' }}>({h.name})</span>
+                      </div>
                       <span className="badge badge-green">{h.sector}</span>
                     </div>
 
@@ -449,8 +549,11 @@ function App() {
                       <div><div className="stat-label">Rev Growth YoY</div><div style={{ fontWeight: '700', color: '#34d399' }}>{h.revenue_growth_yoy}</div></div>
                     </div>
 
-                    <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.5', background: '#090a0d', padding: '0.8rem', border: '1px solid #1e222b', borderRadius: '3px' }}>
-                      <strong style={{ color: '#06b6d4', display: 'block', marginBottom: '0.2rem', textTransform: 'uppercase', fontSize: '0.7rem' }}>Aladdin Holding Synthesis</strong>
+                    <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.5', background: '#090a0d', padding: '0.8rem', border: '1px solid #1e222b', borderRadius: '3px', cursor: 'pointer' }} onClick={() => openTickerModal(h.symbol)}>
+                      <strong style={{ color: '#06b6d4', display: 'block', marginBottom: '0.2rem', textTransform: 'uppercase', fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Aladdin Holding Synthesis</span>
+                        <span style={{ color: '#fbbf24' }}>[Click for Core Business & Revenues]</span>
+                      </strong>
                       {h.earnings_synthesis}
                     </div>
                   </div>

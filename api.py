@@ -244,11 +244,35 @@ async def get_ticker_earnings(ticker: str):
         except:
             pass
             
+        # Synthesize core products & expansion/spending initiatives
+        summary_text = info.get("longBusinessSummary") or f"Institutional quantitative instrument representing {name} ({ticker}). Monitored by Aladdin Quant Engine."
+        sector = info.get("sector", "N/A")
+        industry = info.get("industry", "N/A")
+        
+        if sym.upper() == "NVDA":
+            core_prods = "Data Center GPU Clusters (H100/Blackwell B200), Enterprise AI Networking (InfiniBand/Spectrum-X), GeForce Gaming GPUs, Drive Autonomous Vehicle AI."
+            expansion = "Aggressive multi-billion dollar R&D scaling in next-generation silicon architectures, sovereign AI infrastructure partnerships, and data center thermal efficiency CapEx."
+        elif sym.upper() == "PLTR":
+            core_prods = "Artificial Intelligence Platform (AIP), Gotham Defense & Intelligence Platform, Foundry Enterprise Data Operating System, Apollo Continuous Deployment."
+            expansion = "Exponential commercial expansion across U.S. healthcare, energy, and manufacturing sectors via bootcamp onboarding, accompanied by scaling defense AI logistics contracts."
+        elif sym.upper() == "TSLA":
+            core_prods = "Electric Vehicles (Model 3, Y, S, X, Cybertruck), Megapack & Powerwall Energy Storage, Full Self-Driving (FSD) Software & Cybercab Robotaxi Infrastructure."
+            expansion = "Massive CapEx allocation toward AI compute superclusters (Dojo / H100s), humanoid robotics development (Optimus), and gigafactory manufacturing footprint expansion."
+        elif sym.upper() in ["GLD", "SLV", "GC=F"]:
+            core_prods = f"Physical bullion trust vaulting ({name}). Direct fractional ownership of LBMA-certified standard 400 oz gold and silver bars."
+            expansion = "Zero corporate operational CapEx or R&D dilution. Expansion managed via daily primary creation and redemption ETF baskets with authorized institutional participant bullion banks."
+        elif "-USD" in sym.upper():
+            core_prods = f"Decentralised global digital asset network ({sym}). Proof-of-Work/Proof-of-Stake consensus throughput with sovereign censorship-resistant settlement."
+            expansion = "Continuous open-source protocol upgrades, Layer-2 scaling integrations, institutional ETF structural inflow expansions, and zero third-party balance sheet debt."
+        else:
+            core_prods = f"Core enterprise products and commercial services spanning the {industry} within the {sector} sector."
+            expansion = f"Ongoing reinvestment of operational cash flows ({fmt_c(info.get('operatingCashflow'))}) into strategic R&D, structural competitive moats, and regional market expansion."
+
         return {
             "symbol": ticker.upper(),
             "name": name,
-            "sector": info.get("sector", "N/A"),
-            "industry": info.get("industry", "N/A"),
+            "sector": sector,
+            "industry": industry,
             "next_earnings_date": next_earn,
             "pe_ratio_trailing": round(float(info.get("trailingPE", 0)), 2) if info.get("trailingPE") else "N/A",
             "pe_ratio_forward": round(float(info.get("forwardPE", 0)), 2) if info.get("forwardPE") else "N/A",
@@ -266,7 +290,9 @@ async def get_ticker_earnings(ticker: str):
             "target_mean": info.get("targetMeanPrice", "N/A"),
             "target_high": info.get("targetHighPrice", "N/A"),
             "target_low": info.get("targetLowPrice", "N/A"),
-            "business_summary": info.get("longBusinessSummary") or f"Institutional trading instrument representing {name} ({ticker}). Tracked by Aladdin Quant Engines."
+            "core_business_products": core_prods,
+            "expansion_spending": expansion,
+            "business_summary": summary_text
         }
     except Exception as e:
         import traceback; traceback.print_exc()
