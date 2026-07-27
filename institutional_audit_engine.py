@@ -68,6 +68,7 @@ def run_institutional_audit(cost_mult=1.0, suffix="1x"):
         # Handle timezones
         df['Date'] = pd.to_datetime(df['Date']).dt.tz_localize(None)
         df = compute_indicators(df)
+        df = df.dropna(subset=['Open', 'High', 'Low', 'Close'])
         data[sym] = df
 
     # Get master trade timeline from market business days
