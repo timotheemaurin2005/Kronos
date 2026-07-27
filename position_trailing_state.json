@@ -1,12 +1,42 @@
 {
   "BTCUSD": {
-    "peak_price": 64772.642,
+    "peak_price": 65666.95,
     "tier": 0,
     "tp_price": 67907.7976
   },
   "SOLUSD": {
-    "peak_price": 75.754,
+    "peak_price": 77.107,
     "tier": 0,
     "tp_price": 78.43504093098001
+  },
+  "DOGEUSD": {
+    "peak_price": 0.0732256,
+    "tier": 0,
+    "tp_price": 0.07712380648
+  },
+  "ETHUSD": {
+    "peak_price": 1971.65,
+    "tier": 0,
+    "tp_price": 2069.0140301527604
+  },
+  "NVDA": {
+    "peak_price": 206.26,
+    "tier": 0,
+    "tp_price": 217.86180000000002
+  },
+  "MSFT": {
+    "peak_price": 391.6,
+    "tier": 0,
+    "tp_price": 412.8064
+  },
+  "AMZN": {
+    "peak_price": 234.975,
+    "tier": 0,
+    "tp_price": 248.93822386000002
+  },
+  "META": {
+    "peak_price": 607.6099,
+    "tier": 0,
+    "tp_price": 643.4465
   }
 }
