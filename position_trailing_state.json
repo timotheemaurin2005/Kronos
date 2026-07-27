@@ -9,18 +9,13 @@
     "tier": 0,
     "tp_price": 78.43504093098001
   },
-  "ETHUSD": {
-    "peak_price": 1971.65,
-    "tier": 0,
-    "tp_price": 2069.0140301527604
-  },
   "NVDA": {
     "peak_price": 206.26,
     "tier": 0,
     "tp_price": 217.86180000000002
   },
   "MSFT": {
-    "peak_price": 392.06,
+    "peak_price": 393.86,
     "tier": 0,
     "tp_price": 412.8064
   },
@@ -40,18 +35,28 @@
     "tp_price": 402.8106
   },
   "AMD": {
-    "peak_price": 488.53,
+    "peak_price": 489.61,
     "tier": 0,
     "tp_price": 510.50289
   },
   "DOGEUSD": {
-    "peak_price": 0.071398548,
+    "peak_price": 0.072244,
     "tier": 0,
     "tp_price": 0.07568246088000001
   },
   "PLTR": {
-    "peak_price": 127.19,
+    "peak_price": 132.275,
     "tier": 0,
     "tp_price": 134.40800000000002
+  },
+  "TSLA": {
+    "peak_price": 309.355938,
+    "tier": 0,
+    "tp_price": 327.91729428
+  },
+  "ETHUSD": {
+    "peak_price": 1942.842,
+    "tier": 0,
+    "tp_price": 2061.61865234375
   }
 }
