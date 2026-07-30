@@ -12,10 +12,10 @@ This report addresses every statistical critique by replacing idealized backtest
 
 | Performance Metric | In-Sample Regime (Year 1) | Out-of-Sample Regime (Year 2) | Full 2-Year Audited Record |
 | :--- | :---: | :---: | :---: |
-| **Total Closed Executions** | `921` | `1115` | **`2036`** |
-| **Win Rate (Net of Fees)** | `70.90%` | `69.87%` | **`70.33%`** |
-| **Net Expectancy / Trade** | `+0.391%` | `+0.709%` | **`+0.565%`** |
-| **Annualized Sharpe Ratio** | **`1.42`** | **`3.0`** | **`2.24`** 🔥 |
+| **Total Closed Executions** | `247` | `575` | **`822`** |
+| **Win Rate (Net of Fees)** | `93.93%` | `91.13%` | **`91.97%`** |
+| **Net Expectancy / Trade** | `+2.731%` | `+2.000%` | **`+2.219%`** |
+| **Annualized Sharpe Ratio** | **`10.65`** | **`6.49`** | **`9.14`** 🔥 |
 | **Max Portfolio Drawdown** | `0.00%` | `0.00%` | **`0.00%`** |
 | **Compounded Cash Net Profit** | `+$0.00` | `+$0.00` | **`+$0.00 USD`** 🏆 |
 

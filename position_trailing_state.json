@@ -5,7 +5,7 @@
     "tp_price": 412.8064
   },
   "AMD": {
-    "peak_price": 496.27,
+    "peak_price": 499.8493,
     "tier": 0,
     "tp_price": 510.50289
   },
@@ -15,7 +15,7 @@
     "tp_price": 248.93822386000002
   },
   "AVGO": {
-    "peak_price": 388.32,
+    "peak_price": 390.98,
     "tier": 0,
     "tp_price": 402.8106
   },
@@ -50,17 +50,17 @@
     "tp_price": 548.974
   },
   "IWM": {
-    "peak_price": 292.78,
+    "peak_price": 293.12,
     "tier": 0,
     "tp_price": 308.34135102
   },
   "JPM": {
-    "peak_price": 352.095,
+    "peak_price": 352.5,
     "tier": 0,
     "tp_price": 367.06988464000005
   },
   "QQQ": {
-    "peak_price": 686.0405,
+    "peak_price": 687.67,
     "tier": 0,
     "tp_price": 714.9024949600001
   },
@@ -70,17 +70,17 @@
     "tp_price": 55.6719632
   },
   "V": {
-    "peak_price": 366.335,
+    "peak_price": 366.5,
     "tier": 0,
     "tp_price": 386.96360000000004
   },
   "AAPL": {
-    "peak_price": 334.7,
+    "peak_price": 335.18,
     "tier": 0,
     "tp_price": 353.0754
   },
   "GOOGL": {
-    "peak_price": 335.1396,
+    "peak_price": 335.6,
     "tier": 0,
     "tp_price": 352.22740000000005
   },
