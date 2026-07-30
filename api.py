@@ -9,6 +9,7 @@ import os
 import torch
 import dotenv
 from alpaca.trading.client import TradingClient
+from alpaca.trading.requests import GetPortfolioHistoryRequest
 
 # Import model components
 import sys
@@ -810,6 +811,61 @@ async def get_macro_ft():
                 "ecb": {"rate": "3.75%", "outlook": "Data Dependent / Moderate Easing Bias", "next_decision": "September 12"},
                 "boe": {"rate": "5.25%", "outlook": "Split Vote Expected on 25bps Cut", "next_decision": "August 1"}
             }
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/portfolio_performance")
+async def get_portfolio_performance():
+    try:
+        dotenv.load_dotenv("/Users/timotheemaurin/Kronos/.env")
+        api_key = os.getenv('ALPACA_API_KEY')
+        secret_key = os.getenv('ALPACA_SECRET_KEY')
+        
+        if not api_key or not secret_key:
+            return {"status": "unconfigured", "history": [], "sharpe": 0, "sortino": 0}
+            
+        client = TradingClient(api_key, secret_key, paper=True)
+        # Fetch 1 month of history at 1-day resolution
+        req = GetPortfolioHistoryRequest(period="1M", timeframe="1D", extended_hours=True)
+        hist = client.get_portfolio_history(req)
+        
+        # Process history for lightweight-charts
+        history_data = []
+        for i in range(len(hist.timestamp)):
+            if hist.equity[i] is not None:
+                # lightweight-charts uses unix timestamps in seconds
+                history_data.append({
+                    "time": hist.timestamp[i], 
+                    "value": float(hist.equity[i])
+                })
+        
+        # Calculate Sharpe and Sortino
+        sharpe = 0.0
+        sortino = 0.0
+        
+        equity_curve = [float(e) for e in hist.equity if e is not None]
+        if len(equity_curve) > 1:
+            returns = np.diff(equity_curve) / equity_curve[:-1]
+            
+            # Sharpe
+            std_dev = np.std(returns)
+            if std_dev > 0:
+                sharpe = np.sqrt(252) * np.mean(returns) / std_dev
+                
+            # Sortino
+            downside = returns[returns < 0]
+            down_std = np.std(downside) if len(downside) > 0 else 0
+            if down_std > 0:
+                sortino = np.sqrt(252) * np.mean(returns) / down_std
+        
+        return {
+            "status": "success",
+            "history": history_data,
+            "sharpe": round(sharpe, 2),
+            "sortino": round(sortino, 2)
         }
     except Exception as e:
         import traceback

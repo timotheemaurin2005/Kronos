@@ -19,6 +19,9 @@ function App() {
   // Live Portfolio State
   const [portfolioData, setPortfolioData] = useState(null)
   const [loadingPortfolio, setLoadingPortfolio] = useState(false)
+  const [performanceData, setPerformanceData] = useState(null)
+  const perfChartContainerRef = useRef(null)
+  const perfChartRef = useRef(null)
 
   // Financial Times Macro State
   const [ftData, setFtData] = useState(null)
@@ -114,17 +117,78 @@ function App() {
     return () => window.removeEventListener('resize', handleResize)
   }, [ticker, activeTab])
 
-  // Fetch Live Portfolio when tab changes
+  // Fetch Live Portfolio periodically when tab is active
   useEffect(() => {
+    let intervalId;
+    let perfIntervalId;
     if (activeTab === 'portfolio') {
+      const fetchPortfolio = () => {
+        fetch(`${API_BASE}/live_trades`)
+          .then(res => res.json())
+          .then(data => setPortfolioData(data))
+          .catch(err => console.error("Error fetching live trades", err))
+      }
+      
+      const fetchPerformance = () => {
+        fetch(`${API_BASE}/portfolio_performance`)
+          .then(res => res.json())
+          .then(data => setPerformanceData(data))
+          .catch(err => console.error("Error fetching performance", err))
+      }
+      
       setLoadingPortfolio(true)
-      fetch(`${API_BASE}/live_trades`)
-        .then(res => res.json())
-        .then(data => setPortfolioData(data))
-        .catch(err => console.error("Error fetching live trades", err))
-        .finally(() => setLoadingPortfolio(false))
+      fetchPortfolio() // initial fetch
+      fetchPerformance() // initial fetch
+      setLoadingPortfolio(false)
+      
+      intervalId = setInterval(fetchPortfolio, 3000) // Poll trades every 3 seconds
+      perfIntervalId = setInterval(fetchPerformance, 30000) // Poll performance every 30 seconds
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+      if (perfIntervalId) clearInterval(perfIntervalId)
     }
   }, [activeTab])
+  
+  // Render Performance Chart
+  useEffect(() => {
+    if (activeTab !== 'portfolio' || !perfChartContainerRef.current || !performanceData || !performanceData.history || performanceData.history.length === 0) return
+
+    if (!perfChartRef.current) {
+      const chart = createChart(perfChartContainerRef.current, {
+        layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8b95a5' },
+        grid: { vertLines: { color: 'rgba(255, 255, 255, 0.04)' }, horzLines: { color: 'rgba(255, 255, 255, 0.04)' } },
+        crosshair: { mode: 1 },
+        timeScale: { timeVisible: true, secondsVisible: false },
+        height: 250,
+      })
+      perfChartRef.current = chart
+
+      const areaSeries = chart.addAreaSeries({
+        lineColor: '#10b981',
+        topColor: 'rgba(16, 185, 129, 0.4)',
+        bottomColor: 'rgba(16, 185, 129, 0.0)',
+        lineWidth: 2,
+      })
+      areaSeries.setData(performanceData.history)
+      chart.timeScale().fitContent()
+      
+      // Store the series so we can update it later
+      chart.areaSeries = areaSeries
+    } else {
+      // Update existing chart data
+      perfChartRef.current.areaSeries.setData(performanceData.history)
+    }
+
+    const handleResize = () => {
+      if (perfChartContainerRef.current && perfChartRef.current) {
+        perfChartRef.current.applyOptions({ width: perfChartContainerRef.current.clientWidth })
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [performanceData, activeTab])
 
   // Fetch Financial Times Macro when tab changes
   useEffect(() => {
@@ -406,15 +470,25 @@ function App() {
                   <div className="stat-value">${portfolioData.account?.buying_power.toLocaleString() || '--'}</div>
                 </div>
                 <div className="stat-card">
-                  <div className="stat-label">Unencumbered Cash Reserves</div>
-                  <div className="stat-value">${portfolioData.account?.cash.toLocaleString() || '--'}</div>
-                </div>
-                <div className="stat-card">
                   <div className="stat-label">Net Gain vs Initial Baseline</div>
                   <div className="stat-value" style={{ color: (portfolioData.account?.day_change >= 0) ? '#10b981' : '#ef4444' }}>
                     {portfolioData.account?.day_change >= 0 ? '+' : ''}${portfolioData.account?.day_change || 0}
                   </div>
                 </div>
+                <div className="stat-card" style={{ borderLeft: '3px solid #8b5cf6' }}>
+                  <div className="stat-label">Sharpe Ratio</div>
+                  <div className="stat-value" style={{ color: '#c4b5fd' }}>{performanceData?.sharpe || '0.00'}</div>
+                </div>
+                <div className="stat-card" style={{ borderLeft: '3px solid #fbbf24' }}>
+                  <div className="stat-label">Sortino Ratio</div>
+                  <div className="stat-value" style={{ color: '#fde68a' }}>{performanceData?.sortino || '0.00'}</div>
+                </div>
+              </div>
+              
+              {/* Performance Equity Curve Chart */}
+              <div className="panel" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+                <h3 style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '1rem', marginTop: 0 }}>Historical Equity Curve</h3>
+                <div ref={perfChartContainerRef} style={{ width: '100%', height: '250px' }} />
               </div>
 
               <h2 className="panel-title" style={{ marginTop: '0.5rem' }}>
