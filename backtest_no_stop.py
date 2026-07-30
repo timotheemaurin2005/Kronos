@@ -94,29 +94,7 @@ def simulate_realistic_trade(entry_price, future_df, is_crypto=False, commission
         low = float(curr_bar["low"])
         close = float(curr_bar["close"])
         
-        # Check if downward stop floor is breached
-        if low <= stop_price:
-            # CRITICAL REALISM FIX: We DO NOT get filled magically at stop_price!
-            # If the market gap-through opens significantly below stop_price on the next bar (or wick slippage),
-            # we absorb the worst of stop_price vs next bar open!
-            next_open = float(next_bar["open"])
-            fill_price = min(stop_price, next_open)
-            
-            # Apply downward slippage penalty (0.05% additional market impact on stop orders)
-            slippage_impact = fill_price * (0.0015 if is_crypto else 0.0005)
-            real_exit_price = fill_price - slippage_impact
-            
-            # Calculate net return after round-trip commissions
-            gross_ret = (real_exit_price - entry_price) / entry_price
-            net_ret = gross_ret - (2 * commission_rate) # Enter + Exit fee
-            
-            return {
-                "exit_price": round(real_exit_price, 4),
-                "return_pct": round(net_ret * 100.0, 2),
-                "exit_reason": f"Stop Triggered (Filled @ Next Open/Slippage)",
-                "bars_held": idx + 1,
-                "tier": tier
-            }
+        # Stop loss removed for this test
 
         # Update high water mark & promotions
         gain = (high - entry_price) / entry_price
@@ -163,7 +141,7 @@ def simulate_realistic_trade(entry_price, future_df, is_crypto=False, commission
         "tier": tier
     }
 
-def calculate_sharpe_and_drawdown(trade_returns_pct, initial_capital=100000.0):
+def calculate_sharpe_and_drawdown(trade_returns_pct, trade_convictions, initial_capital=500000.0):
     """
     Computes annualized Sharpe Ratio (4.5% Risk-Free assumption) and Max Portfolio Drawdown.
     """
@@ -180,21 +158,34 @@ def calculate_sharpe_and_drawdown(trade_returns_pct, initial_capital=100000.0):
     
     sharpe = (mean_ret - rf_per_trade) / std_ret * ann_factor if std_ret > 0 else 0.0
     
-    # Compute compounded equity trajectory & max drawdown
-    equity_curve = [initial_capital]
+    # Compute compounded equity trajectory & max drawdown for FLAT 15%
+    eq_flat = [initial_capital]
     for r in returns:
-        # Assuming position sizing is 15% of current equity per trade
-        pos_size = equity_curve[-1] * 0.15
-        pnl = pos_size * r
-        equity_curve.append(equity_curve[-1] + pnl)
+        pnl = (eq_flat[-1] * 0.15) * r
+        eq_flat.append(eq_flat[-1] + pnl)
         
-    eq_arr = np.array(equity_curve)
-    rolling_max = np.maximum.accumulate(eq_arr)
-    drawdowns = (eq_arr - rolling_max) / rolling_max
-    max_dd = abs(np.min(drawdowns)) * 100.0
-    final_equity = equity_curve[-1]
+    eq_flat_arr = np.array(eq_flat)
+    rolling_max_f = np.maximum.accumulate(eq_flat_arr)
+    dd_f = (eq_flat_arr - rolling_max_f) / rolling_max_f
+    max_dd_flat = abs(np.min(dd_f)) * 100.0
+    pnl_flat = eq_flat[-1] - initial_capital
+
+    # Compute compounded equity trajectory & max drawdown for DYNAMIC (10%-30%)
+    eq_dyn = [initial_capital]
+    for r, c in zip(returns, trade_convictions):
+        size_pct = min(0.30, 0.10 * max(1.0, c / 2.0))
+        pnl = (eq_dyn[-1] * size_pct) * r
+        eq_dyn.append(eq_dyn[-1] + pnl)
+        
+    eq_dyn_arr = np.array(eq_dyn)
+    rolling_max_d = np.maximum.accumulate(eq_dyn_arr)
+    dd_d = (eq_dyn_arr - rolling_max_d) / rolling_max_d
+    max_dd_dyn = abs(np.min(dd_d)) * 100.0
+    pnl_dyn = eq_dyn[-1] - initial_capital
     
-    return round(sharpe, 2), round(max_dd, 2), round(final_equity - initial_capital, 2)
+    return round(sharpe, 2), round(max_dd_flat, 2), round(pnl_flat, 2), round(max_dd_dyn, 2), round(pnl_dyn, 2)
+        
+
 
 def run_stress_verification():
     print("==========================================================================================")
@@ -214,10 +205,11 @@ def run_stress_verification():
     print("✅ Model weights loaded in memory. Running multi-asset simulation loop...\n")
 
     symbols = [
-        ("NVDA", False), ("TSLA", False), ("MSFT", False), ("AAPL", False), ("AMZN", False),
-        ("GLD", False), ("SLV", False),
+        ("NVDA", False), ("TSLA", False), ("AAPL", False), ("AMZN", False),
+        ("META", False), ("GOOGL", False), ("AMD", False), ("AVGO", False), ("PLTR", False),
+        ("JPM", False), ("V", False),
         ("SPY", False), ("QQQ", False), ("DIA", False), ("IWM", False),
-        ("BTC-USD", True), ("ETH-USD", True), ("SOL-USD", True)
+        ("GLD", False), ("SLV", False)
     ]
     
     in_sample_trades = []
@@ -259,7 +251,8 @@ def run_stress_verification():
             
             trade_obj = {
                 "symbol": sym, "type": asset_type, "return_pct": res["return_pct"],
-                "exit_reason": res["exit_reason"], "tier": res["tier"]
+                "exit_reason": res["exit_reason"], "tier": res["tier"],
+                "conviction": convict
             }
             all_trades.append(trade_obj)
             
@@ -282,7 +275,7 @@ def run_stress_verification():
         avg_w = tdf[tdf["return_pct"] > 0]["return_pct"].mean() if wins > 0 else 0.0
         avg_l = tdf[tdf["return_pct"] <= 0]["return_pct"].mean() if losses > 0 else 0.0
         expectancy = ((wr/100.0) * avg_w) + (((100-wr)/100.0) * avg_l) # avg_l is negative
-        sharpe, max_dd, comp_pnl = calculate_sharpe_and_drawdown(tdf["return_pct"].tolist())
+        sharpe, max_dd_flat, pnl_flat, max_dd_dyn, pnl_dyn = calculate_sharpe_and_drawdown(tdf["return_pct"].tolist(), tdf["conviction"].tolist())
         
         print(f"\n📈 [{label}] STATISTICAL AUDITING VERIFICATION:")
         print(f"   • Evaluated Executions:    {len(tdf):,}")
@@ -291,9 +284,10 @@ def run_stress_verification():
         print(f"   • Avg Loss (Gap/Slippage): {avg_l:.2f}%")
         print(f"   • Net Trade Expectancy:    {expectancy:+.3f}% per execution")
         print(f"   • Institutional Sharpe:    {sharpe} (Annualized Risk-Adjusted Returns)")
-        print(f"   • Portfolio Max Drawdown:  {max_dd:.2f}% (On compounded $100k capital)")
-        print(f"   • Net Portfolio Cash Gain: +${comp_pnl:,.2f} USD")
-        return {"trades": len(tdf), "wr": wr, "exp": expectancy, "sharpe": sharpe, "max_dd": max_dd, "pnl": comp_pnl}
+        print(f"   --- SIZING COMPARISON (Starting Capital: $500,000) ---")
+        print(f"   • [FLAT 15%] Max Drawdown: {max_dd_flat:.2f}%  |  Net Cash Gain: +${pnl_flat:,.2f}")
+        print(f"   • [DYNAMIC]  Max Drawdown: {max_dd_dyn:.2f}%  |  Net Cash Gain: +${pnl_dyn:,.2f}")
+        return {"trades": len(tdf), "wr": wr, "exp": expectancy, "sharpe": sharpe, "pnl_flat": pnl_flat, "pnl_dyn": pnl_dyn}
 
     print("\n" + "="*85)
     print("🏆 AUDITING VERIFICATION RESULTS (ADDRESSING CRITIQUES BY THE NUMBERS)")

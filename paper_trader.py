@@ -90,6 +90,7 @@ def analyze_macro_and_news(ticker, yf_ticker, is_crypto=False):
     # Keyword Sentiment Scoring Engine
     bullish_keywords = ["surge", "record", "inflow", "approval", "etf", "bullish", "recovery", "gain", "adopt", "jump", "rally", "growth", "boost", "outperform", "buy", "upward", "soar", "milestone"]
     bearish_keywords = ["hack", "ban", "lawsuit", "sec", "investigat", "outflow", "crash", "plunge", "bearish", "fall", "drop", "inflation", "rate hike", "risk", "sell", "downward", "slump", "concern"]
+    bubble_keywords = ["bubble", "tech wreck", "ai bust", "overvalued", "ai crash", "burst", "overheating"]
 
     text = " ".join(headlines).lower()
     for kw in bullish_keywords:
@@ -98,6 +99,9 @@ def analyze_macro_and_news(ticker, yf_ticker, is_crypto=False):
     for kw in bearish_keywords:
         if re.search(r'\b' + kw, text):
             score -= 20  # Weight downside risks heavily
+    for kw in bubble_keywords:
+        if re.search(r'\b' + kw, text):
+            score -= 50  # Extreme penalty for AI bubble / Tech wreck warnings
 
     score = max(-100, min(100, score))
     verdict = "BULLISH 🟢" if score >= 15 else ("BEARISH 🔴" if score <= -15 else "NEUTRAL 🟡")
@@ -271,11 +275,9 @@ def monitor_active_positions(client, stop_strategy="tiered", predictor=None):
             print(f"📊 [LIVE POSITION] {symbol}: Qty {p.qty} | Current: ${current_price:,.4f} | Entry: ${avg_entry:,.4f} | P&L: ${unrealized_pl_usd:+.2f} ({gain_pct:+.2f}%)")
             print(f"   🛡️ Stop-Loss Strategy [{reason}]: SL Trigger @ ${sl_price:,.4f} | Target TP @ ${tp_price:,.4f}")
             
-            # Check for Stop-Loss or Take-Profit Trigger
+            # Check for Take-Profit Trigger (Stop-Loss logic removed)
             trigger_type = None
-            if current_price <= sl_price and sl_price > 0:
-                trigger_type = f"STOP-LOSS 🛑 (Price ${current_price:,.4f} <= SL ${sl_price:,.4f})"
-            elif current_price >= tp_price and tp_price > 0:
+            if current_price >= tp_price and tp_price > 0:
                 trigger_type = f"TAKE-PROFIT ✅ (Price ${current_price:,.4f} >= TP ${tp_price:,.4f})"
                 
             if trigger_type:
@@ -432,29 +434,33 @@ def evaluate_and_trade(client, predictor, watchlist, trade_amount_usd=1000, stop
             sig = trade["signal"]
             is_cryp = trade["is_crypto"]
             
+            # Scale capital based on Neural Net conviction
+            convict_score = trade["conviction_score"]
+            # Base amount is scaled up to 3x based on high conviction
+            scaled_amount = trade_amount_usd * min(3.0, max(1.0, convict_score / 2.0))
+            
             if not client:
-                print(f"   ℹ️ [DRY-RUN] Would have submitted BUY order for ~${trade_amount_usd} of {t_ticker}.")
+                print(f"   ℹ️ [DRY-RUN] Would have submitted BUY order for ~${scaled_amount:,.2f} of {t_ticker}.")
                 continue
 
             if is_cryp:
-                qty = round(trade_amount_usd / c_price, 6)
+                qty = round(scaled_amount / c_price, 6)
                 tif = TimeInForce.GTC
                 unit_label = "coins/units"
             else:
-                qty = max(1, int(trade_amount_usd / c_price))
+                qty = max(1, int(scaled_amount / c_price))
                 tif = TimeInForce.DAY
                 unit_label = "share(s)"
             
-            print(f"\n   🛒 Deploying Capital: Buy {qty} {unit_label} of {a_sym}...")
+            print(f"\n   🛒 Deploying Capital (${scaled_amount:,.2f}): Buy {qty} {unit_label} of {a_sym}...")
             try:
                 order_data = MarketOrderRequest(
                     symbol=a_sym,
                     qty=qty,
                     side=OrderSide.BUY,
                     time_in_force=tif,
-                    order_class=OrderClass.BRACKET,
-                    take_profit=TakeProfitRequest(limit_price=sig['take_profit']),
-                    stop_loss=StopLossRequest(stop_price=sig['stop_loss'])
+                    order_class=OrderClass.OTO,
+                    take_profit=TakeProfitRequest(limit_price=sig['take_profit'])
                 )
                 order = client.submit_order(order_data)
                 print(f"   ✅ Bracket Trade Executed! Order ID: {order.id} (Check your TradingView charts!)")
@@ -476,9 +482,9 @@ def evaluate_and_trade(client, predictor, watchlist, trade_amount_usd=1000, stop
 
 def main():
     parser = argparse.ArgumentParser(description="Kronos Autonomous Paper Trading Engine")
-    parser.add_argument("--watchlist", nargs="+", default=["NVDA", "TSLA", "NOW", "PLTR", "AAPL", "MSFT", "META", "AMZN", "AMD", "AVGO", "GLD", "SLV"], help="List of ticker symbols to evaluate")
+    parser.add_argument("--watchlist", nargs="+", default=["NVDA", "PLTR", "AVGO", "GOOGL", "V", "IWM", "AMD", "TSLA", "SLV", "QQQ", "GLD", "AMZN", "JPM", "SPY", "DIA", "AAPL", "META"], help="List of ticker symbols to evaluate")
     parser.add_argument("--crypto", action="store_true", help="Use default 24/7 weekend cryptocurrency watchlist (BTC, ETH, SOL, DOGE)")
-    parser.add_argument("--amount", type=float, default=10000.0, help="Target dollar amount per position (default $10,000 for $100k equity)")
+    parser.add_argument("--amount", type=float, default=50000.0, help="Target dollar amount per position (default $50,000 for $500k equity)")
     parser.add_argument("--interval", type=int, default=5, help="Minutes to wait between evaluation sweeps")
     parser.add_argument("--once", action="store_true", help="Perform one scan across the watchlist and exit immediately")
     parser.add_argument("--stop-strategy", choices=["tiered", "static", "atr", "beta"], default="tiered", help="Select software stop-loss management algorithm")

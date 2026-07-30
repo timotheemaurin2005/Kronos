@@ -1,62 +1,42 @@
 {
-  "BTCUSD": {
-    "peak_price": 65666.95,
-    "tier": 0,
-    "tp_price": 67907.7976
-  },
-  "SOLUSD": {
-    "peak_price": 77.107,
-    "tier": 0,
-    "tp_price": 78.43504093098001
-  },
-  "NVDA": {
-    "peak_price": 206.26,
-    "tier": 0,
-    "tp_price": 217.86180000000002
-  },
   "MSFT": {
-    "peak_price": 393.86,
+    "peak_price": 427.0,
     "tier": 0,
     "tp_price": 412.8064
   },
-  "AMZN": {
-    "peak_price": 234.975,
-    "tier": 0,
-    "tp_price": 248.93822386000002
-  },
-  "META": {
-    "peak_price": 608.86,
-    "tier": 0,
-    "tp_price": 643.4465
-  },
-  "AVGO": {
-    "peak_price": 383.09,
-    "tier": 0,
-    "tp_price": 402.8106
-  },
   "AMD": {
-    "peak_price": 489.61,
+    "peak_price": 481.6065,
     "tier": 0,
     "tp_price": 510.50289
   },
-  "DOGEUSD": {
-    "peak_price": 0.072244,
+  "AMZN": {
+    "peak_price": 234.847381,
     "tier": 0,
-    "tp_price": 0.07568246088000001
+    "tp_price": 248.93822386000002
+  },
+  "AVGO": {
+    "peak_price": 380.01,
+    "tier": 0,
+    "tp_price": 402.8106
+  },
+  "META": {
+    "peak_price": 600.8825,
+    "tier": 0,
+    "tp_price": 636.9354500000001
+  },
+  "NVDA": {
+    "peak_price": 201.550408,
+    "tier": 0,
+    "tp_price": 213.64343248
   },
   "PLTR": {
-    "peak_price": 132.275,
+    "peak_price": 126.8,
     "tier": 0,
     "tp_price": 134.40800000000002
   },
   "TSLA": {
-    "peak_price": 309.355938,
+    "peak_price": 307.527969,
     "tier": 0,
-    "tp_price": 327.91729428
-  },
-  "ETHUSD": {
-    "peak_price": 1942.842,
-    "tier": 0,
-    "tp_price": 2061.61865234375
+    "tp_price": 325.97964714
   }
 }
